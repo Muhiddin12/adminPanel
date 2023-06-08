@@ -13,32 +13,52 @@ import {
   Button,
   Spacer,
   Box,
+  FormControl,
+  FormLabel,
+  Input,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { deleteById, getAll } from "../../API/service";
 import { DeleteIcon, RepeatIcon } from "@chakra-ui/icons";
+import { Link } from "react-router-dom";
+import { useMutation, useQuery } from "react-query";
 
-function DynamicTable({ slug = "zuzuAdmin" }) {
-  const [data, setData] = useState([]);
+function DynamicTable({ slug = "branches" }) {
+  // const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    setIsLoading(true);
-    getAll(slug)
-      .then((response) => setData(response.data))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const {
+    data: quertData,
+    isSuccess,
+    refetch,
+  } = useQuery("getQuery", () => getAll(slug).then((res) => res.data));
+
+  const deleteMutation = useMutation(deleteById, {
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  // useEffect(() => {
+  //   setIsLoading(true);
+  //   getAll(slug)
+  //     .then((response) => setData(response.data))
+  //     .finally(() => setIsLoading(false));
+  // }, []);
 
   const onDeleteClick = (id) => {
-    setIsLoading(true);
-    deleteById(slug, id).then(() => {
-      getAll(slug)
-        .then((response) => setData(response.data))
-        .finally(() => setIsLoading(false));
-    });
+    deleteMutation.mutate({ slug, id });
+    // setIsLoading(true);
+    // deleteById(slug, id).then(() => {
+    //   getAll(slug)
+    //     .then((response) => setData(response.data))
+    //     .finally(() => setIsLoading(false));
+    // });
   };
 
-  const fields = data?.length ? Object.keys(data[0]) : [];
+  const fields = quertData?.length ? Object.keys(quertData[0]) : [];
+
+  // console.log("testttttttt", fields);
 
   return (
     <div className="Table">
@@ -48,38 +68,42 @@ function DynamicTable({ slug = "zuzuAdmin" }) {
             <Thead>
               <Tr>
                 {fields.map((title) => (
-                  <Th>{title}</Th>
+                  <Th size="lg">{title}</Th>
                 ))}
                 <Center>
                   <Th>Actions</Th>
+                  <Link to={`/${slug}/create`}>
+                    <Button colorScheme="green" size="md">
+                      Add
+                    </Button>
+                  </Link>
                 </Center>
               </Tr>
             </Thead>
             <Tbody>
-              {data.map((element) => (
+              {quertData?.map((element) => (
                 <Tr>
                   {fields.map((key) => (
-                    <Td>{element[key]}</Td>
+                    <Td textAlign={"Center"}>{element[key]}</Td>
                   ))}
                   <Td>
                     <Flex>
-                      <Box>
+                      <Link to={`/${slug}/update/${element.id}`}>
                         <Button isLoading={isLoading} colorScheme="blue">
                           <RepeatIcon />
                           Update
                         </Button>
-                      </Box>
+                      </Link>
                       <Spacer />
-                      <Box>
-                        <Button
-                          isLoading={isLoading}
-                          onClick={() => onDeleteClick(element.id)}
-                          colorScheme="red"
-                        >
-                          <DeleteIcon />
-                          Delete
-                        </Button>
-                      </Box>
+                      <Button
+                        isLoading={isLoading}
+                        onClick={() => onDeleteClick(element.id)}
+                        colorScheme="red"
+                      >
+                        <DeleteIcon />
+                        Delete
+                      </Button>
+                      <Spacer />
                     </Flex>
                   </Td>
                 </Tr>
